@@ -1,0 +1,44 @@
+# Production override for docker-compose
+version: '3.8'
+
+services:
+  git2page:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    restart: always
+    environment:
+      - RUST_LOG=warn
+    # Add reverse proxy in production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.git2page.rule=Host(`your-domain.com`)"
+      - "traefik.http.routers.git2page.tls=true"
+      - "traefik.http.services.git2page.loadbalancer.server.port=5001"
+
+  # Optional: Add reverse proxy for SSL termination
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=admin@your-domain.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - git2page-network

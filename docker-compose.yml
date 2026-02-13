@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  git2page:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      # LLM Configuration
+      - LLM_API_URL=${LLM_API_URL:-https://ollama.com}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-llama3}
+      
+      # GitHub Configuration
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      
+      # Server Configuration
+      - RUST_LOG=${RUST_LOG:-info}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      # Optional: Mount a volume for logs if needed
+      - ./logs:/app/logs
+    networks:
+      - git2page-network
+
+networks:
+  git2page-network:
+    driver: bridge
+
+volumes:
+  logs:
