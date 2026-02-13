@@ -1,5 +1,5 @@
 # Optimized Dockerfile for Git2Page
-FROM rust:1.78-alpine as builder
+FROM rust:alpine as builder
 
 WORKDIR /app
 
