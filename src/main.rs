@@ -19,7 +19,7 @@ struct AnalyzeRequest {
 }
 
 fn default_language() -> String {
-    "Turkish".to_string()
+    "English".to_string()
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -735,7 +735,7 @@ async fn analyze(body: web::Json<AnalyzeRequest>) -> HttpResponse {
     let api_url = env_or(&body.api_url, "LLM_API_URL");
     let api_key = env_or(&body.api_key, "LLM_API_KEY");
     let model_name = env_or(&body.model_name, "LLM_MODEL");
-    let language = if body.language.is_empty() { "Turkish".to_string() } else { body.language.clone() };
+    let language = if body.language.is_empty() { "English".to_string() } else { body.language.clone() };
 
     eprintln!("[analyze] Request received for user: {}", body.github_username);
     eprintln!("[analyze] API URL: {}, Model: {}, Language: {}", api_url, model_name, language);

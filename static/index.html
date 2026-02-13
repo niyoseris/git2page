@@ -77,11 +77,11 @@
         <!-- Form Section -->
         <section id="form-section" class="max-w-2xl mx-auto">
             <div class="text-center mb-10">
-                <h1 class="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-white via-brand-100 to-brand-400 bg-clip-text text-transparent">
+                <h1 id="form-heading" class="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-white via-brand-100 to-brand-400 bg-clip-text text-transparent">
                     GitHub Profile → Landing Page
                 </h1>
-                <p class="text-gray-400 text-lg">
-                    AI destekli analiz ile GitHub profilinizi profesyonel bir vitrine dönüştürün.
+                <p id="form-description" class="text-gray-400 text-lg">
+                    Turn your GitHub profile into a polished landing page powered by AI analysis.
                 </p>
             </div>
 
@@ -90,23 +90,23 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <!-- GitHub Username -->
                     <div class="md:col-span-2">
-                        <label for="github_username" class="block text-sm font-medium text-gray-300 mb-2">
-                            GitHub Kullanıcı Adı
+                        <label id="label-github-username" for="github_username" class="block text-sm font-medium text-gray-300 mb-2">
+                            GitHub Username
                         </label>
                         <input
                             type="text"
                             id="github_username"
                             name="github_username"
                             required
-                            placeholder="örn: torvalds"
+                            placeholder="e.g., torvalds"
                             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                         />
                     </div>
 
                     <!-- Language Selector -->
                     <div>
-                        <label for="language" class="block text-sm font-medium text-gray-300 mb-2">
-                            🌐 Çıktı Dili
+                        <label id="label-language" for="language" class="block text-sm font-medium text-gray-300 mb-2">
+                            🌐 Output Language
                         </label>
                         <select
                             id="language"
@@ -114,8 +114,8 @@
                             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all appearance-none cursor-pointer"
                             style="background-image: url('data:image/svg+xml;utf8,<svg fill=\"white\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>'); background-repeat: no-repeat; background-position: right 12px center; background-size: 20px;"
                         >
-                            <option value="Turkish" selected>🇹🇷 Türkçe</option>
-                            <option value="English">🇬🇧 English</option>
+                            <option value="English" selected>�� English</option>
+                            <option value="Turkish">�� Türkçe</option>
                             <option value="German">🇩🇪 Deutsch</option>
                             <option value="French">🇫🇷 Français</option>
                             <option value="Spanish">🇪🇸 Español</option>
@@ -135,8 +135,8 @@
 
                 <!-- GitHub Token (optional) -->
                 <div>
-                    <label for="github_token" class="block text-sm font-medium text-gray-300 mb-2">
-                        GitHub Token <span class="text-gray-500 font-normal">(opsiyonel — rate limit aşımını önler)</span>
+                    <label id="label-github-token" for="github_token" class="block text-sm font-medium text-gray-300 mb-2">
+                        GitHub Token <span id="github-token-hint" class="text-gray-500 font-normal">(optional — prevents rate limit issues)</span>
                     </label>
                     <input
                         type="password"
@@ -149,7 +149,7 @@
 
                 <!-- API URL -->
                 <div>
-                    <label for="api_url" class="block text-sm font-medium text-gray-300 mb-2">
+                    <label id="label-api-url" for="api_url" class="block text-sm font-medium text-gray-300 mb-2">
                         LLM API URL
                     </label>
                     <input
@@ -157,36 +157,36 @@
                         id="api_url"
                         name="api_url"
                         required
-                        placeholder="örn: https://api.openai.com/v1"
+                        placeholder="e.g., https://api.openai.com/v1"
                         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                     />
                 </div>
 
                 <!-- API Key -->
                 <div>
-                    <label for="api_key" class="block text-sm font-medium text-gray-300 mb-2">
+                    <label id="label-api-key" for="api_key" class="block text-sm font-medium text-gray-300 mb-2">
                         API Key
                     </label>
                     <input
                         type="password"
                         id="api_key"
                         name="api_key"
-                        placeholder="sk-... (opsiyonel, Ollama için boş bırakılabilir)"
+                        placeholder="sk-... (optional, leave empty for Ollama)"
                         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                     />
                 </div>
 
                 <!-- Model Name -->
                 <div>
-                    <label for="model_name" class="block text-sm font-medium text-gray-300 mb-2">
-                        Model Adı
+                    <label id="label-model-name" for="model_name" class="block text-sm font-medium text-gray-300 mb-2">
+                        Model Name
                     </label>
                     <input
                         type="text"
                         id="model_name"
                         name="model_name"
                         required
-                        placeholder="örn: llama3, gpt-4o-mini, mistral"
+                        placeholder="e.g., llama3, gpt-4o-mini, mistral"
                         class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                     />
                 </div>
@@ -200,7 +200,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                    <span id="btn-text">Analiz Et</span>
+                    <span id="btn-text">Analyze Profile</span>
                 </button>
             </form>
         </section>
@@ -213,8 +213,8 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold mb-2">Profil Analiz Ediliyor...</h2>
-            <p class="text-gray-400" id="loading-status">GitHub verileri çekiliyor...</p>
+            <h2 id="loading-title" class="text-2xl font-bold mb-2">Analyzing profile...</h2>
+            <p class="text-gray-400" id="loading-status">Fetching GitHub data...</p>
             <div class="mt-8 flex justify-center gap-2">
                 <div class="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
                 <div class="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
@@ -230,10 +230,10 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-red-300 mb-2">Bir Hata Oluştu</h3>
+                <h3 id="error-title" class="text-xl font-bold text-red-300 mb-2">Something went wrong</h3>
                 <p class="text-red-200/70" id="error-message"></p>
                 <button onclick="resetToForm()" class="mt-6 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-all">
-                    Tekrar Dene
+                    <span id="error-button-text">Try Again</span>
                 </button>
             </div>
         </section>
@@ -248,7 +248,7 @@
                 <div class="mt-6 flex justify-center gap-4">
                     <a id="profile-link" href="#" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-all">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                        GitHub Profili
+                        <span id="profile-link-text">GitHub Profile</span>
                     </a>
                 </div>
             </div>
@@ -259,7 +259,7 @@
                     <svg class="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
-                    Projeler
+                    <span id="projects-title">Projects</span>
                 </h2>
                 <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
             </div>
@@ -269,24 +269,24 @@
                 <div class="flex flex-wrap justify-center gap-3 mb-6">
                     <button onclick="exportAsHTML()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600/20 hover:bg-brand-600/40 border border-brand-500/30 rounded-xl text-sm font-medium text-brand-300 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                        HTML
+                        <span id="export-html-label">HTML</span>
                     </button>
                     <button onclick="exportAsJSON()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 rounded-xl text-sm font-medium text-emerald-300 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z"/></svg>
-                        JSON
+                        <span id="export-json-label">JSON</span>
                     </button>
                     <button onclick="exportAsCSV()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600/20 hover:bg-amber-600/40 border border-amber-500/30 rounded-xl text-sm font-medium text-amber-300 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        CSV
+                        <span id="export-csv-label">CSV</span>
                     </button>
                     <button onclick="exportAsMarkdown()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 rounded-xl text-sm font-medium text-purple-300 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        Markdown
+                        <span id="export-md-label">Markdown</span>
                     </button>
                 </div>
                 <div class="text-center">
                     <button onclick="resetToForm()" class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-all">
-                        ← Yeni Analiz Yap
+                        <span id="back-button-text">← Start New Analysis</span>
                     </button>
                 </div>
             </div>
@@ -297,7 +297,7 @@
     <!-- Footer -->
     <footer class="border-t border-white/5 mt-20">
         <div class="max-w-6xl mx-auto px-6 py-6 text-center text-gray-500 text-sm">
-            Git2Page — Rust + Actix-web + Tailwind CSS ile oluşturuldu
+            Git2Page — Built with Rust, Actix-web, and Tailwind CSS
         </div>
     </footer>
 
