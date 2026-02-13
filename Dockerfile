@@ -5,9 +5,14 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apk add --no-cache \
+    build-base \
+    perl \
     musl-dev \
     openssl-dev \
     pkgconfig
+
+# Ensure explicit target is available in CI/buildx environments
+RUN rustup target add x86_64-unknown-linux-musl
 
 # Copy Cargo files
 COPY Cargo.toml Cargo.lock ./
