@@ -60,12 +60,31 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
+    - name: Validate deploy secrets
+      env:
+        DEPLOY_HOST: ${{ secrets.SSH_HOST || secrets.HOST || secrets.SERVER_HOST }}
+        DEPLOY_USER: ${{ secrets.SSH_USER || secrets.USERNAME }}
+        DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY || secrets.SSH_KEY }}
+      run: |
+        if [ -z "$DEPLOY_HOST" ]; then
+          echo "Missing deploy host secret. Set one of: SSH_HOST, HOST, SERVER_HOST"
+          exit 1
+        fi
+        if [ -z "$DEPLOY_USER" ]; then
+          echo "Missing deploy username secret. Set one of: SSH_USER, USERNAME"
+          exit 1
+        fi
+        if [ -z "$DEPLOY_KEY" ]; then
+          echo "Missing deploy key secret. Set one of: DEPLOY_SSH_KEY, SSH_KEY"
+          exit 1
+        fi
+
     - name: Deploy to production
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST || secrets.HOST || secrets.SERVER_HOST }}
+        username: ${{ secrets.SSH_USER || secrets.USERNAME }}
+        key: ${{ secrets.DEPLOY_SSH_KEY || secrets.SSH_KEY }}
         script: |
           cd /opt/git2page
           docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
