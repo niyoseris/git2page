@@ -10,12 +10,69 @@ const btnText = document.getElementById('btn-text');
 const loadingStatus = document.getElementById('loading-status');
 const errorMessage = document.getElementById('error-message');
 const languageSelect = document.getElementById('language');
+const templateSelect = document.getElementById('template');
+const projectsGrid = document.getElementById('projects-grid');
 
 let currentLanguage = (languageSelect && languageSelect.value) || 'English';
+let currentTemplate = (templateSelect && templateSelect.value) || 'modern';
 let githubTokenFromEnv = false;
 let apiKeyFromEnv = false;
 
 let lastResultData = null;
+const LOCAL_CONFIG_KEY = 'git2page_local_config_v1';
+
+function wasmModeEnabled() {
+    return Boolean(window.__USE_WASM__);
+}
+
+function hasWasmAnalyzer() {
+    return typeof window.git2pageWasmAnalyze === 'function';
+}
+
+function isGitHubPagesHost() {
+    const host = window.location.hostname || '';
+    return host.endsWith('github.io');
+}
+
+function readLocalConfig() {
+    try {
+        const raw = localStorage.getItem(LOCAL_CONFIG_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (_) {
+        return null;
+    }
+}
+
+function saveLocalConfig(cfg) {
+    try {
+        localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(cfg));
+    } catch (_) {
+        // Ignore storage write failures (private mode, quota, etc.)
+    }
+}
+
+async function waitForWasmReady(timeoutMs = 7000) {
+    if (hasWasmAnalyzer()) return true;
+
+    await new Promise((resolve) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            resolve();
+        }, timeoutMs);
+
+        window.addEventListener('git2page:wasm-ready', () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve();
+        }, { once: true });
+    });
+
+    return hasWasmAnalyzer();
+}
 
 // ─── Localization ────────────────────────────────────────────────────────────
 
@@ -26,6 +83,7 @@ const translations = {
         labelGithubUsername: 'GitHub Username',
         placeholderGithubUsername: 'e.g., torvalds',
         labelLanguage: '🌐 Output Language',
+        labelTemplate: '🎨 Template Style',
         labelGithubToken: 'GitHub Token',
         githubTokenHint: '(optional — prevents rate limit issues)',
         placeholderGithubToken: 'ghp_... (Settings → Developer settings → Personal access tokens)',
@@ -72,6 +130,7 @@ const translations = {
         labelGithubUsername: 'GitHub Kullanıcı Adı',
         placeholderGithubUsername: 'örn: torvalds',
         labelLanguage: '🌐 Çıktı Dili',
+        labelTemplate: '🎨 Şablon Stili',
         labelGithubToken: 'GitHub Token',
         githubTokenHint: '(opsiyonel — rate limit aşımını önler)',
         placeholderGithubToken: 'ghp_... (Settings → Developer settings → Personal access tokens)',
@@ -133,6 +192,7 @@ function applyLanguage(lang) {
     const githubLabel = document.getElementById('label-github-username');
     const githubInput = document.getElementById('github_username');
     const languageLabel = document.getElementById('label-language');
+    const templateLabel = document.getElementById('label-template');
     const tokenLabel = document.getElementById('label-github-token');
     const tokenHint = document.getElementById('github-token-hint');
     const tokenInput = document.getElementById('github_token');
@@ -158,6 +218,7 @@ function applyLanguage(lang) {
     if (githubLabel) githubLabel.textContent = dict.labelGithubUsername;
     if (githubInput) githubInput.placeholder = dict.placeholderGithubUsername;
     if (languageLabel) languageLabel.textContent = dict.labelLanguage;
+    if (templateLabel) templateLabel.textContent = dict.labelTemplate;
     if (tokenLabel) tokenLabel.childNodes[0].textContent = `${dict.labelGithubToken} `;
     if (tokenHint) tokenHint.textContent = dict.githubTokenHint;
     if (tokenInput) tokenInput.placeholder = githubTokenFromEnv ? dict.tokenLoadedPlaceholder : dict.placeholderGithubToken;
@@ -184,6 +245,16 @@ function applyLanguage(lang) {
 // ─── Load Config from .env ──────────────────────────────────────────────────
 
 (async function loadConfig() {
+    if (wasmModeEnabled()) {
+        const cfg = readLocalConfig();
+        if (cfg?.api_url) document.getElementById('api_url').value = cfg.api_url;
+        if (cfg?.model_name) document.getElementById('model_name').value = cfg.model_name;
+        if (cfg?.github_token) document.getElementById('github_token').value = cfg.github_token;
+        if (cfg?.api_key) document.getElementById('api_key').value = cfg.api_key;
+        applyLanguage(currentLanguage);
+        return;
+    }
+
     try {
         const resp = await fetch('/config');
         const cfg = await resp.json();
@@ -207,6 +278,15 @@ if (languageSelect) {
     });
 }
 
+if (templateSelect) {
+    templateSelect.addEventListener('change', (event) => {
+        applyTemplate(event.target.value);
+        if (lastResultData) {
+            renderResult(lastResultData);
+        }
+    });
+}
+
 // ─── State Management ───────────────────────────────────────────────────────
 
 function showSection(section) {
@@ -215,6 +295,36 @@ function showSection(section) {
     });
     section.classList.remove('hidden');
 }
+
+function applyTemplate(templateName) {
+    const allowedTemplates = [
+        'modern',
+        'spotlight',
+        'timeline',
+        '8bit',
+        'gothic',
+        'myspace',
+        'retro-terminal',
+        'magazine'
+    ];
+    currentTemplate = allowedTemplates.includes(templateName) ? templateName : 'modern';
+
+    const templateClasses = allowedTemplates.map(name => `template-${name}`);
+    templateClasses.forEach(cls => resultSection.classList.remove(cls));
+    resultSection.classList.add(`template-${currentTemplate}`);
+
+    if (projectsGrid) {
+        if (currentTemplate === 'timeline') {
+            projectsGrid.className = 'grid grid-cols-1 gap-4';
+        } else if (currentTemplate === 'magazine') {
+            projectsGrid.className = 'grid grid-cols-1 xl:grid-cols-3 gap-5';
+        } else {
+            projectsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-5';
+        }
+    }
+}
+
+applyTemplate(currentTemplate);
 
 function resetToForm() {
     showSection(formSection);
@@ -242,6 +352,14 @@ form.addEventListener('submit', async (e) => {
     const apiKey = document.getElementById('api_key').value.trim();
     const modelName = document.getElementById('model_name').value.trim();
     const language = document.getElementById('language').value;
+    const payload = {
+        github_username: githubUsername,
+        github_token: githubToken,
+        api_url: apiUrl,
+        api_key: apiKey,
+        model_name: modelName,
+        language,
+    };
 
     if (!githubUsername) {
         showError(t('errorMissingUsername'));
@@ -270,28 +388,53 @@ form.addEventListener('submit', async (e) => {
             updateLoadingStatus(t('loadingStatus4'));
         }, 60000);
 
-        const response = await fetch('/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                github_username: githubUsername,
-                github_token: githubToken,
-                api_url: apiUrl,
-                api_key: apiKey,
-                model_name: modelName,
-                language: language,
-            }),
-        });
+        let data;
+        const shouldTryWasm = wasmModeEnabled();
+        if (shouldTryWasm) {
+            const wasmReady = await waitForWasmReady();
+            if (!wasmReady) {
+                if (isGitHubPagesHost()) {
+                    throw new Error('WASM analyzer could not be initialized. Please refresh and try again.');
+                }
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || t('errorUnknown'));
+                }
+            } else {
+                data = await window.git2pageWasmAnalyze(payload);
+            }
+        } else {
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || t('errorUnknown'));
+            }
+        }
 
         clearTimeout(statusTimer);
         clearTimeout(statusTimer2);
         clearTimeout(statusTimer3);
         clearTimeout(statusTimer4);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Bilinmeyen bir hata oluştu.');
+        if (wasmModeEnabled()) {
+            saveLocalConfig({
+                api_url: apiUrl,
+                model_name: modelName,
+                github_token: githubToken,
+                api_key: apiKey,
+            });
         }
 
         renderResult(data);
@@ -322,6 +465,8 @@ function renderResult(data) {
     const grid = document.getElementById('projects-grid');
     grid.innerHTML = '';
 
+    applyTemplate(currentTemplate);
+
     data.projects.forEach((project, index) => {
         const card = createProjectCard(project, index);
         grid.appendChild(card);
@@ -333,7 +478,18 @@ function renderResult(data) {
 function createProjectCard(project, index) {
     const card = document.createElement('div');
     const delay = Math.min(index * 0.08, 0.8);
-    card.className = `bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-brand-500/30 card-glow transition-all duration-300 fade-in-up`;
+    const templateCardClasses = {
+        modern: 'bg-white/5 border border-white/10 rounded-2xl',
+        spotlight: 'border border-brand-400/40 rounded-2xl',
+        timeline: 'border border-white/10 rounded-xl',
+        '8bit': 'border rounded-none',
+        gothic: 'border border-amber-200/30 rounded-xl',
+        myspace: 'border border-cyan-300/60 rounded-2xl',
+        'retro-terminal': 'border border-emerald-300/40 rounded-xl',
+        magazine: 'border border-zinc-100/20 rounded-lg'
+    };
+    const templateClass = templateCardClasses[currentTemplate] || templateCardClasses.modern;
+    card.className = `${templateClass} p-6 hover:border-brand-500/30 card-glow transition-all duration-300 fade-in-up project-card`;
     card.style.animationDelay = `${delay}s`;
     card.style.opacity = '0';
 
@@ -367,6 +523,10 @@ function createProjectCard(project, index) {
         `<span class="px-2.5 py-1 bg-brand-500/15 text-brand-300 text-xs font-medium rounded-lg">${escapeHtml(tech)}</span>`
     ).join('');
 
+    const timelinePrefix = currentTemplate === 'timeline'
+        ? `<span class="text-xs uppercase tracking-widest text-brand-300">#${String(index + 1).padStart(2, '0')}</span>`
+        : '';
+
     // Use cases list
     const useCasesTitle = t('useCasesTitle');
     const useCasesHTML = (project.use_cases && project.use_cases.length > 0) ? `
@@ -384,8 +544,9 @@ function createProjectCard(project, index) {
     ` : '';
 
     card.innerHTML = `
-        <div class="flex items-start justify-between mb-3">
+        <div class="flex items-start justify-between mb-3 gap-3">
             <h3 class="text-lg font-bold text-white truncate">${escapeHtml(project.name)}</h3>
+            ${timelinePrefix}
             <a href="${escapeHtml(project.html_url)}" target="_blank" class="text-gray-500 hover:text-brand-400 transition-colors flex-shrink-0 ml-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -477,24 +638,27 @@ function exportAsMarkdown() {
 function exportAsHTML() {
     if (!lastResultData) return;
     const d = lastResultData;
-    const projectCards = d.projects.map(p => {
+    const exportTheme = getExportTheme(currentTemplate);
+    const projectCards = d.projects.map((p, index) => {
         const useCases = (p.use_cases && p.use_cases.length > 0)
             ? `<div style="margin-top:12px"><strong>${escapeHtml(t('htmlUseCases'))}:</strong><ul>${p.use_cases.map(uc => `<li>${escapeHtml(uc)}</li>`).join('')}</ul></div>`
             : '';
         const techBadges = (p.tech_stack || []).map(t =>
-            `<span style="display:inline-block;background:#6366f120;color:#818cf8;padding:2px 10px;border-radius:8px;font-size:12px;margin:2px">${escapeHtml(t)}</span>`
+            `<span style="display:inline-block;background:${exportTheme.badgeBg};color:${exportTheme.badgeText};padding:2px 10px;border-radius:8px;font-size:12px;margin:2px">${escapeHtml(t)}</span>`
         ).join('');
+        const timelineMark = currentTemplate === 'timeline' ? `<div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${exportTheme.muted};margin-bottom:10px">Entry ${index + 1}</div>` : '';
         return `
-        <div style="background:#1e1e2e;border:1px solid #333;border-radius:16px;padding:24px;margin-bottom:16px">
+        <div style="background:${exportTheme.cardBg};border:1px solid ${exportTheme.cardBorder};border-radius:${exportTheme.cardRadius};padding:24px;margin-bottom:16px">
+            ${timelineMark}
             <div style="display:flex;justify-content:space-between;align-items:center">
                 <h3 style="color:#fff;margin:0;font-size:18px">${escapeHtml(p.name)}</h3>
-                <a href="${escapeHtml(p.html_url)}" target="_blank" style="color:#818cf8;font-size:13px">View →</a>
+                <a href="${escapeHtml(p.html_url)}" target="_blank" style="color:${exportTheme.link};font-size:13px">View →</a>
             </div>
-            <p style="color:#a78bfa;font-size:14px;margin-top:8px;font-weight:500">${escapeHtml(p.problem_solved || '')}</p>
-            <p style="color:#9ca3af;font-size:14px;line-height:1.6">${escapeHtml(p.detailed_description || '')}</p>
+            <p style="color:${exportTheme.accent};font-size:14px;margin-top:8px;font-weight:500">${escapeHtml(p.problem_solved || '')}</p>
+            <p style="color:${exportTheme.text};font-size:14px;line-height:1.6">${escapeHtml(p.detailed_description || '')}</p>
             ${useCases}
             <div style="margin-top:12px">${techBadges}</div>
-            <div style="margin-top:12px;font-size:12px;color:#6b7280">
+            <div style="margin-top:12px;font-size:12px;color:${exportTheme.muted}">
                 ⭐ ${p.stars} &nbsp; 🍴 ${p.forks} &nbsp; ${p.language || ''}
             </div>
         </div>`;
@@ -508,26 +672,26 @@ function exportAsHTML() {
     <title>${escapeHtml(d.username)} - Git2Page</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f1a; color: #e5e7eb; padding: 40px 20px; }
+        body { font-family: ${exportTheme.fontFamily}; background: ${exportTheme.bodyBg}; color: #e5e7eb; padding: 40px 20px; }
         .container { max-width: 800px; margin: 0 auto; }
-        a { color: #818cf8; text-decoration: none; }
+        a { color: ${exportTheme.link}; text-decoration: none; }
         ul { padding-left: 20px; }
-        li { color: #9ca3af; font-size: 13px; margin: 4px 0; }
+        li { color: ${exportTheme.text}; font-size: 13px; margin: 4px 0; }
     </style>
 </head>
 <body>
     <div class="container">
         <div style="text-align:center;padding:40px 0;border-bottom:1px solid #222">
             <img src="${d.avatar_url}" alt="avatar" style="width:96px;height:96px;border-radius:50%;border:3px solid #6366f150;margin-bottom:20px"/>
-            <h1 style="font-size:36px;background:linear-gradient(to right,#fff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${escapeHtml(d.hero_title)}</h1>
-            <p style="color:#9ca3af;font-size:16px;max-width:600px;margin:16px auto;line-height:1.6">${escapeHtml(d.bio)}</p>
-            <a href="${d.profile_url}" target="_blank" style="display:inline-block;margin-top:12px;padding:8px 20px;background:#ffffff15;border-radius:12px;font-size:14px">${escapeHtml(t('htmlProfileButton'))}</a>
+            <h1 style="font-size:36px;background:${exportTheme.heroGradient};-webkit-background-clip:text;-webkit-text-fill-color:transparent">${escapeHtml(d.hero_title)}</h1>
+            <p style="color:${exportTheme.text};font-size:16px;max-width:600px;margin:16px auto;line-height:1.6">${escapeHtml(d.bio)}</p>
+            <a href="${d.profile_url}" target="_blank" style="display:inline-block;margin-top:12px;padding:8px 20px;background:${exportTheme.buttonBg};border-radius:12px;font-size:14px">${escapeHtml(t('htmlProfileButton'))}</a>
         </div>
         <div style="padding:32px 0">
             <h2 style="font-size:24px;margin-bottom:24px;color:#fff">${escapeHtml(t('htmlProjectsHeading'))}</h2>
             ${projectCards}
         </div>
-        <div style="text-align:center;padding:20px 0;border-top:1px solid #222;color:#6b7280;font-size:13px">
+        <div style="text-align:center;padding:20px 0;border-top:1px solid #222;color:${exportTheme.muted};font-size:13px">
             ${escapeHtml(t('htmlGeneratedBy'))}
         </div>
     </div>
@@ -535,6 +699,133 @@ function exportAsHTML() {
 </html>`;
 
     downloadFile(`${d.username}-git2page.html`, html, 'text/html');
+}
+
+function getExportTheme(templateName) {
+    const themes = {
+        modern: {
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            bodyBg: '#0f0f1a',
+            cardBg: '#1e1e2e',
+            cardBorder: '#333',
+            cardRadius: '16px',
+            text: '#9ca3af',
+            muted: '#6b7280',
+            accent: '#a78bfa',
+            link: '#818cf8',
+            badgeBg: '#6366f120',
+            badgeText: '#818cf8',
+            heroGradient: 'linear-gradient(to right,#fff,#818cf8)',
+            buttonBg: '#ffffff15'
+        },
+        spotlight: {
+            fontFamily: "'Space Grotesk', -apple-system, sans-serif",
+            bodyBg: 'radial-gradient(circle at top, #312e81, #020617)',
+            cardBg: 'rgba(49,46,129,0.35)',
+            cardBorder: '#818cf8',
+            cardRadius: '18px',
+            text: '#c7d2fe',
+            muted: '#a5b4fc',
+            accent: '#f5d0fe',
+            link: '#c4b5fd',
+            badgeBg: '#a78bfa33',
+            badgeText: '#ddd6fe',
+            heroGradient: 'linear-gradient(to right,#ffffff,#c4b5fd)',
+            buttonBg: '#a78bfa33'
+        },
+        timeline: {
+            fontFamily: "'Inter', sans-serif",
+            bodyBg: '#020617',
+            cardBg: 'rgba(15,23,42,0.8)',
+            cardBorder: '#475569',
+            cardRadius: '10px',
+            text: '#cbd5e1',
+            muted: '#94a3b8',
+            accent: '#93c5fd',
+            link: '#7dd3fc',
+            badgeBg: '#0ea5e933',
+            badgeText: '#7dd3fc',
+            heroGradient: 'linear-gradient(to right,#f8fafc,#7dd3fc)',
+            buttonBg: '#0ea5e933'
+        },
+        '8bit': {
+            fontFamily: "'Press Start 2P', monospace",
+            bodyBg: '#020617',
+            cardBg: '#050b0f',
+            cardBorder: '#34d399',
+            cardRadius: '0px',
+            text: '#bbf7d0',
+            muted: '#86efac',
+            accent: '#fef08a',
+            link: '#5eead4',
+            badgeBg: '#34d39922',
+            badgeText: '#6ee7b7',
+            heroGradient: 'linear-gradient(to right,#f0fdf4,#5eead4)',
+            buttonBg: '#34d39922'
+        },
+        gothic: {
+            fontFamily: "'Cinzel', serif",
+            bodyBg: '#0b0715',
+            cardBg: 'rgba(24,12,34,0.75)',
+            cardBorder: '#f59e0b',
+            cardRadius: '14px',
+            text: '#fde68a',
+            muted: '#fcd34d',
+            accent: '#fef3c7',
+            link: '#fbbf24',
+            badgeBg: '#f59e0b33',
+            badgeText: '#fde68a',
+            heroGradient: 'linear-gradient(to right,#fef9c3,#f59e0b)',
+            buttonBg: '#f59e0b2e'
+        },
+        myspace: {
+            fontFamily: "'Permanent Marker', 'Comic Sans MS', cursive",
+            bodyBg: 'linear-gradient(160deg,#1d4ed8,#ec4899)',
+            cardBg: 'rgba(236,72,153,0.22)',
+            cardBorder: '#67e8f9',
+            cardRadius: '20px',
+            text: '#fce7f3',
+            muted: '#cffafe',
+            accent: '#f9a8d4',
+            link: '#67e8f9',
+            badgeBg: '#67e8f933',
+            badgeText: '#cffafe',
+            heroGradient: 'linear-gradient(to right,#fdf2f8,#67e8f9)',
+            buttonBg: '#67e8f933'
+        },
+        'retro-terminal': {
+            fontFamily: "'VT323', monospace",
+            bodyBg: '#020b06',
+            cardBg: 'rgba(3,15,9,0.85)',
+            cardBorder: '#34d399',
+            cardRadius: '10px',
+            text: '#6ee7b7',
+            muted: '#4ade80',
+            accent: '#bbf7d0',
+            link: '#6ee7b7',
+            badgeBg: '#34d39922',
+            badgeText: '#6ee7b7',
+            heroGradient: 'linear-gradient(to right,#d1fae5,#34d399)',
+            buttonBg: '#34d39922'
+        },
+        magazine: {
+            fontFamily: "'Space Grotesk', -apple-system, sans-serif",
+            bodyBg: '#09090b',
+            cardBg: '#18181b',
+            cardBorder: '#3f3f46',
+            cardRadius: '10px',
+            text: '#d4d4d8',
+            muted: '#a1a1aa',
+            accent: '#e4e4e7',
+            link: '#93c5fd',
+            badgeBg: '#93c5fd22',
+            badgeText: '#bfdbfe',
+            heroGradient: 'linear-gradient(to right,#fafafa,#93c5fd)',
+            buttonBg: '#27272a'
+        }
+    };
+
+    return themes[templateName] || themes.modern;
 }
 
 function getLanguageColor(language) {

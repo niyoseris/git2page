@@ -2,3 +2,5 @@
 .env
 data/
 /niyoseris-git2page.html
+static/pkg/
+wasm/target/

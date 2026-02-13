@@ -113,6 +113,38 @@ cargo test
 docker-compose up -d
 ```
 
+### GitHub Pages (WASM)
+
+This repository now includes a browser-side WASM analyzer (`wasm/`) that can run on GitHub Pages without an Actix server.
+
+Important notes:
+
+- Your API keys are entered in the browser and stored in `localStorage` on your device.
+- LLM/GitHub endpoints must allow browser requests (CORS).
+- For production, prefer scoped tokens and low-privilege keys.
+
+#### Local WASM build
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install wasm-pack
+wasm-pack build wasm --target web --out-dir ../static/pkg --release
+```
+
+Then serve `static/` with any static file server.
+
+#### Automatic Pages deploy
+
+On push to `main`, GitHub Actions workflow `.github/workflows/pages.yml`:
+
+1. Builds WASM package into `static/pkg`
+2. Copies `static/` to `dist/`
+3. Deploys `dist/` to GitHub Pages
+
+Enable Pages in repo settings:
+
+- **Settings → Pages → Build and deployment → Source: GitHub Actions**
+
 ### Cloud Platforms
 - **Railway**: Auto-deploy from GitHub
 - **Render**: Docker web service
